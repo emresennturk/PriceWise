@@ -3,35 +3,36 @@ package Project.PriceWise.configs;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.FileInputStream;
 
 @Configuration
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.path}")
-    private String firebaseCredentialsPath;
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
 
+    // Spring Boot uygulaması başlatıldığında Firebase uygulamasının başlatılmasını
+    // sağlar.
     @PostConstruct
-    public void initialize() throws IOException {
-        InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream(firebaseCredentialsPath);
+    public void initialize() {
+        try {
+            FileInputStream serviceAccount = new FileInputStream("src/main/resources/adminsdk.json");
 
-        if (serviceAccount == null) {
-            throw new IllegalArgumentException("Service account stream cannot be null");
-        }
-
-        // Firebase yapılandırması oluşturuluyor
-        FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                .build();
-
-        // Firebase uygulamasını yalnızca henüz başlatılmadıysa başlatılıyor
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp.initializeApp(options);
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setDatabaseUrl("https://pricewise1-a6ce2-default-rtdb.firebaseio.com")
+                    .build();
+            if (FirebaseApp.getApps().isEmpty()) {
+                FirebaseApp.initializeApp(options);
+                logger.info("FirebaseApp initialized successfully.");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to initialize FirebaseApp: {}", e.getMessage(), e);
         }
     }
 
